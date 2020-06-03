@@ -176,7 +176,7 @@ RtsneAssists <- Rtsne::Rtsne(
   X=select(totalXA,-player.name,-shotAssists,-assists,-group)
 )
 
-RTSNEFeatures <- data.frame(RtsneAssists$Y,as.character(totalXA$group))
+RTSNEFeatures <- data.frame(RtsneAssists$Y,totalXA$group)
 colnames(RTSNEFeatures) <- c('feature1','feature2','group')
 ggplot(RTSNEFeatures) +
   aes(x=feature1, y=feature2, color=group) +
@@ -194,7 +194,7 @@ prcompAssists <- prcomp(
   rank = 2
 )
 
-PRCCompFeatures <- data.frame(prcompAssists$x[,1:2],as.character(totalXA$group))
+PRCCompFeatures <- data.frame(prcompAssists$x[,1:2],totalXA$group)
 colnames(PRCCompFeatures) <- c('feature1','feature2','group')
 ggplot(PRCCompFeatures) +
   aes(x=feature1, y=feature2, color=group) +
@@ -213,7 +213,7 @@ basis_acq <- NMF::basis(nmfAssists)
 coef_acq <- NMF::coef(nmfAssists)
 t(round(head(coef_acq),3)) %>% View()
 
-nonNegFeatures <- data.frame(basis_acq, as.character(totalXA$group))
+nonNegFeatures <- data.frame(basis_acq, totalXA$group)
 colnames(nonNegFeatures) <- c('feature1','feature2','group')
 ggplot(nonNegFeatures) +
   aes(x=feature1, y=feature2, color=group) +
