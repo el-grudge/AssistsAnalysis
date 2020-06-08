@@ -359,3 +359,29 @@ ggplot(nonNegFeatures) +
   scale_color_viridis_d()
 
 
+############################################################################################################################################################################################
+
+# Correlation plots
+
+totalXA.cor <- cor(select(totalXA, -player.name, -assists, -group))
+ggcorrplot::ggcorrplot(totalXA.cor,
+                       lab=TRUE, 
+                       show.legend=FALSE,
+                       hc.order=TRUE,
+                       color=c('#FDE725FF', '#238A8DFF', '#440154FF'),
+                       lab_size = 2,
+                       outline.color='black')
+
+dist_M <- dist(scale_M)
+heatmap(
+  x = as.matrix(dist_M),
+  col = viridis::viridis(256)
+)
+
+heatmap(
+  x = as.matrix(dist(select(totalXA, -player.name, -assists, -group))),
+  col = viridis::viridis(256)
+)
+
+
+lin_model_xg <- lm(scored~xgb4, data=data)

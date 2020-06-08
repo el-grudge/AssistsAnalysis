@@ -1,8 +1,8 @@
 # AssistsAnalysis
 
-In soccer, the most valuable players are those who score the most goals. However, goalscorers on their own can't do much, they need someone to provide them the ball so they can score. In this analysis I'll look at those providers, the playmakers. It could be argued that assisting is harder than scoring, since it involves picking out a player in space, deciding whether the receiver wants the ball at his feet or ahead of him (if he is making a run behind defense), and doing all of this while under pressure from the opponent's defenders.
+In soccer, the most valuable players are those who score the most goals. However, goalscorers on their own can't do much, they need someone to provide them the ball so they can score. In this analysis I'll look at those providers, the playmakers. It could be argued that assisting is harder than scoring, since it involves picking out a player who has abundant space, while also deciding whether the receiver wants the ball at his feet or ahead of him (if he is making a run behind defense), and doing all of this while under pressure from the opponent's defenders.
 
-I'll be using data from the English Women Super League (FAWSL), provided by statsbomb (https://statsbomb.com/), which provides event tracking data, including pass specific information such as start and end locations & pass height. Statsbomb has opensourced the data from both the 2018/19 & 2019/20 seasons. 
+I'll be using data from the English Women Super League (FAWSL), provided by statsbomb (https://statsbomb.com/), which provides event tracking data, including pass specific information such as the start and end locations of a pass, the height of a pass, etc... Statsbomb has opensourced the data for both the 2018/19 & 2019/20 seasons. 
 
 During this period, there have been 383 assisted goals, and the top five assist providers are:
 
@@ -26,29 +26,42 @@ Keira Walsh - Manchester City: 10
 
 ![alt text](./keira_walsh.jpg)
 
-Incidently, these are the only players with double digits assists. In addition to assisted goals, I also include all assisted shots. I do this for two reasons: 1- To increase the size of dataset - there are 3426 assisted shots compared to only 383 assisted goals. 2- I want to analyze playmaking skill not goal scoring skill; a good playmaker can create a good chance to two different players, one can turn it into a goal while the other might shoot the ball wide - the playmaker ability shouldn't be judged by this miss.
+Incidently, these are the only players with double digits assist totals during the covered time span. So what exactly do these players that makes them more productive? It can be that they start their passes from specific positions on the pitch (this will correspond to the startX variable in our dataset), or it could be that they pick certain locations to pass to (corresponding to the endX variable in our dataset). It could also be that their passes have a specific length, or it could be that they are dead ball specialists with the ability to pick unmarked colleagues from set pieces. Or, it could be a combination of all of these features. This is why I will be using 3 dimesion reduction techniques, T-SNE, PCA, and NMF, to try to distill as much information as possible from the different features into 2 features.
 
-Here is a snapshot of the original data:
+## Features
 
-![alt text](./data1.png)
-
-As mentioned before, the data here describes events, I still need to aggregate it in order to get the totals. The final dataset looks like this:
+Our dataset has 255 players, with 23 dimesions describing different aspects of passes for each. The values for these features are either total count or average. For example, the 'fromThrowins' feature, which tells how many shot assists were provided by a give player from a throw in situation is aggregated by count, while 'passLength' is aggregated by average - the average pass length for a given player. As a result of such aggregation, there will be no categorical variables included in our dataset. Here is a snapshot of the dataset:
 
 ![alt text](./data2.png)
 
-The aggregated data doesn't include any categorical variables, since these have been turned into counts (for example, Vivianne Miedema has provided 10 assists from free kicks).The next step is to split the players into separate bins, determined by the number of assists they provide. In total, we have 6 groups, from those who have provided less than 10 assists (10-), up to those who have provided more than 50 assists (50+):
-
-![alt text](./groups.png)
-
-Now, let's have a look at the relationship between assists and the different features:
-
-![alt text](./relationships.png)
-
-Each figure describes the relationship between assists and a specific feature. One thing of note here is that there is no distinct relationship between any of the features and the target value. It should be mentioned here that the top left image shows the relationship between goal assists and shot assists, so it doesn't actually show a relationship between a predictor and a target, it rather shows the relationship between two aggregate values. What I'm trying to say is that shot assists are a good proxy of the goal assists:
+A quick word about the target variable here: I'll be using shot assists as my target value instead of goal assists. There are 2 reason why I'm doing this: 1- To have a larger dataset; soccer is a low scoring sport, so we have far fewer assisted goals (383) than assisted shots (3426), 2- I'm analyzing playmaking ability not goal scoring ability; a good playmaker should be judged by the quality of her passes, what happens after that in terms of converting a pass into a goal shouldn't have a bearing on our judgement. It should also be mentioned that there is a linear relationship between assisted goals and assisted shots, as illusted by the below plot, so assisted shots can be considered as a good proxy for assisted goals:
 
 ![alt text](./shotAssists.png)
 
-A good dimensionality reduction technique should be able to separate the distinct groups when plotted. This will be the main measure of how effective each technique is.
+Another thing that I need to clarify here is the 'group' label: I'm grouping players by the total number of shot assists they contributed during the 2 seasons in order to have a categorical identifier instead of a continuous one. As seen, the best playmakers are those who have provided 50+ assisted shots, and considering the fact that each team plays 20 matches per season, and that the 2019/20 season was interrupted after 15 matchdays due to the COVID-19 outbreak, we can say that elite playmakers are those who provide 1.5-2 shot assists per game (50+ divided by 35). The top assist providers mentioned above have the following shot assist figures:
+
+1- Vivianne Miedema: 63 (average\* 1.8)  
+2- Bethany Mead: 75 (average 2.14)  
+3- Caroline Weir: 89 (average 2.54)  
+4- Danielle van de Donk: 57 (average 1.63)  
+5- Keira Walsh: 39 (average 1.11)\*\*  
+
+\* The average values here assume that the player has participated in all 35 matches played.  
+\*\* Keira Walsh's average is lower than expected; this could be justified as being an outlier or by the fact that she plays for one the better teams in the league and is surrounded by talented players who are more efficient at scoring 
+
+Here is a table showing counts per each group:
+
+![alt text](./groups.png)
+
+Now, let's examine the relationships between shot assists (target) and the different features (predictors):
+
+![alt text](./relationships.png)
+
+Each one of these plots shows a relationship between shot assists and a particular feature. As seen here, some features have a linear relationship with the target variable (such as regularPlay & rightFoot), and thus might have more predictive power. Also, some of these relationships have a similar shape, an indication of a strong correlation among the predictor variables. The below correlation plot corroborates this:  
+
+![alt text](./correlation.png)
+
+This is another reason why we should use dimension reduction, since a model relying on more predictors is more prone to overfitting.
 
 ## Dimensionality Reduction
 
@@ -68,11 +81,24 @@ Next, I look at PCA. Here is the result:
 
 Finally, non-negative matrix factorization. Here is the result:
 
-![alt text](./nonnegative.png)
+![alt text](./nmf.png)
 
-**From these figures, we can say confidently that non-negative matrix factorization is the best dimensionality reduction technique for our analysis.**
 
-Appendix I - Code
+### Conclusion
+**From these plots we can conclude the that:**
+
+* **t-SNE: The 10- & 20- groups are mixed together, as well as some of the points at the lower end of the feature2 axis, indicating that the t-SNE reduced features do not provide a good picture of our data**
+* **PCA: Provides a better picture than t-SNE, yet we can still identify a few mixed points, especially among the 10- & 20- groups**
+* **NMF: Provies the best picture of our data, with clear distinction among the 6 groups**  
+
+**Another way to compare the three techniques is to use their respective outputs to build a simple linear regression model to predict the number of shot assists, and compare the performance of the three models. The below figure shows the R-Squared values of the three models:**
+
+![alt text](./rsquared.png)
+
+**As shown, the model created using the NMF features has the highest R-Squared value, followed by PCA, and the lowest is t-SNE. This is further evidence that NMF is the best dimensionality reduction technique for our data.**
+
+
+##Appendix I - Code
 
 ```
 # libraries
@@ -81,9 +107,8 @@ library(dplyr)
 library(ggplot2)
 
 ################################################################################## RETRIEVING DATA
-# 1- get free competitions
-# 2- get free matches
-# 3- get FA Women's Super League matches
+# getAssists: function to retrieve the dataset - when fromSource is set to FALSE, the function reads the data from the file
+# totalXA.csv
 
 getAssists <- function(fromSource=FALSE){
   if (fromSource){
@@ -210,91 +235,129 @@ getAssists <- function(fromSource=FALSE){
     totalXA$group <- factor(x=totalXA$group, levels=c('50+','50-','40-','30-','20-','10-'))
     write.csv(totalXA, 'totalXA.csv', row.names = FALSE)
   } else {
-    totalXA <- read.csv('totalXA.csv')
+    totalXA <- read.csv('totalXA.csv', stringsAsFactors = FALSE)
+    totalXA$group <- factor(x=totalXA$group, levels=c('50+','50-','40-','30-','20-','10-'))
   }
   return (totalXA)
 }
 
-############################################################################################################
+######################################################################################## Main
 
 totalXA <- getAssists(fromSource=FALSE)
 
-############################################################################################################
-
-totalXA %>%
-  select(-player.name) %>%
-  reshape2::melt(id.vars=c('assists','group')) %>%
-  ggplot() +
-  aes(x=assists, y=value, color=group) + 
-  geom_point() + 
-  scale_colour_viridis_d() +
-  facet_wrap(~variable, scales = "free") +
-  theme_minimal() + 
-  theme(axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank()) +
-  labs(title = "Relationship between assists and other factors",
-       x ='assists')
-
 ggplot(totalXA) +
-  aes(x=assists, y=shotAssists, color=group) +
+  aes(x=shotAssists, y=assists, color=group) +
   geom_point() + 
   scale_colour_viridis_d() +
   theme_minimal() +
   labs(title = "Relationship between assists and shotAssists")
 
+totalXA %>%
+  select(-player.name, -assists) %>%
+  reshape2::melt(id.vars=c('shotAssists','group')) %>%
+  ggplot() +
+  aes(x=value, y=shotAssists, color=group) + 
+  geom_point() + 
+  scale_colour_viridis_d() +
+  facet_wrap(~variable, scales = "free", strip.position = 'bottom') +
+  theme_minimal() + 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  labs(title = "Relationship between assists and other factors",
+       x='',
+       ylab ='shotAssists')
+
+totalXA.cor <- cor(select(totalXA, -player.name, -assists, -group))
+ggcorrplot::ggcorrplot(totalXA.cor,
+                       lab=TRUE, 
+                       show.legend=FALSE,
+                       hc.order=TRUE,
+                       color=c('#FDE725FF', '#238A8DFF', '#440154FF'),
+                       lab_size = 2,
+                       outline.color='black')
+
 ####################################################################################### DIMENSION REDUCTION
 
 # TNSE
+tsneData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(tsneData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
 set.seed(823)
-RtsneAssists <- Rtsne::Rtsne(
-  X=select(totalXA,-player.name,-shotAssists,-assists,-group)
+tsneAssists <- Rtsne::Rtsne(
+  X=tsneData_M
 )
 
-RTSNEFeatures <- data.frame(RtsneAssists$Y,totalXA$group)
-colnames(RTSNEFeatures) <- c('feature1','feature2','group')
-ggplot(RTSNEFeatures) +
+tsneFeatures <- data.frame(tsneAssists$Y,totalXA$group)
+colnames(tsneFeatures) <- c('feature1','feature2','group')
+rownames(tsneFeatures) <- rownames(tsneData_M)
+ggplot(tsneFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "T-SNE")
 
-
 # PRCOMP
-prcompAssists <- prcomp(
-  x = select(totalXA,-player.name,-shotAssists,-assists,-group),
+pcaData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(pcaData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
+pcaAssists <- prcomp(
+  x = pcaData_M,
   center = TRUE,
   scale. = TRUE,
   rank = 2
 )
 
-PRCCompFeatures <- data.frame(prcompAssists$x[,1:2],totalXA$group)
-colnames(PRCCompFeatures) <- c('feature1','feature2','group')
-ggplot(PRCCompFeatures) +
+pcaFeatures <- data.frame(pcaAssists$x[,1:2],totalXA$group)
+colnames(pcaFeatures) <- c('feature1','feature2','group')
+ggplot(pcaFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "PCA")
 
-
 # NONNEGATIVE
+nmfData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(nmfData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
 nmfAssists <- NMF::nmf(
-  x = select(totalXA,-player.name,-shotAssists,-assists,-group),
+  x = nmfData_M,
   rank = 2
 )
 basis_acq <- NMF::basis(nmfAssists)
 coef_acq <- NMF::coef(nmfAssists)
 t(round(head(coef_acq),3)) %>% View()
 
-nonNegFeatures <- data.frame(basis_acq, totalXA$group)
-colnames(nonNegFeatures) <- c('feature1','feature2','group')
-ggplot(nonNegFeatures) +
+nmfFeatures <- data.frame(basis_acq, totalXA$group)
+colnames(nmfFeatures) <- c('feature1','feature2','group')
+ggplot(nmfFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "Non-Negative Matrix Factorization")
+
+###########################
+
+# Models
+
+tsneFeatures <- data.frame(tsneFeatures[,1:2], totalXA$shotAssists)
+colnames(tsneFeatures)[3] <- 'shotAssists'
+tsneModel <- lm(shotAssists~., data=tsneFeatures)
+tsneSummary <- summary(tsneModel)
+
+pcaFeatures <- data.frame(pcaFeatures[,1:2], totalXA$shotAssists)
+colnames(pcaFeatures)[3] <- 'shotAssists'
+pcaModel <- lm(shotAssists~., data=pcaFeatures)
+pcaSummary <- summary(pcaModel)
+
+nmfFeatures <- data.frame(nmfFeatures[,1:2], totalXA$shotAssists)
+colnames(nmfFeatures)[3] <- 'shotAssists'
+nmfModel <- lm(shotAssists~., data=nmfFeatures)
+nmfSummary <- summary(nmfModel)
+
+rSquared <- data.frame(r.sqr=c(tsneSummary$r.squared, pcaSummary$r.squared, nmfSummary$r.squared), technique=c('tsne', 'pca', 'nmf'))
+ggplot(rSquared) +
+  aes(x=technique, y=r.sqr) + 
+  geom_bar(stat='identity', fill=c('#FDE725FF', '#238A8DFF', '#440154FF')) + 
+  theme_minimal()
 
 ```

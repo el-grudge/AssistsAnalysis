@@ -4,9 +4,8 @@ library(dplyr)
 library(ggplot2)
 
 ################################################################################## RETRIEVING DATA
-# 1- get free competitions
-# 2- get free matches
-# 3- get FA Women's Super League matches
+# getAssists: function to retrieve the dataset - when fromSource is set to FALSE, the function reads the data from the file
+# totalXA.csv
 
 getAssists <- function(fromSource=FALSE){
   if (fromSource){
@@ -134,7 +133,6 @@ getAssists <- function(fromSource=FALSE){
     write.csv(totalXA, 'totalXA.csv', row.names = FALSE)
   } else {
     totalXA <- read.csv('totalXA.csv', stringsAsFactors = FALSE)
-    totalXA$group <- as.character(totalXA$group)
     totalXA$group <- factor(x=totalXA$group, levels=c('50+','50-','40-','30-','20-','10-'))
   }
   return (totalXA)
@@ -144,81 +142,119 @@ getAssists <- function(fromSource=FALSE){
 
 totalXA <- getAssists(fromSource=FALSE)
 
-############################################################################################################
-
-totalXA %>%
-  select(-player.name) %>%
-  reshape2::melt(id.vars=c('assists','group')) %>%
-  ggplot() +
-  aes(x=assists, y=value, color=group) + 
-  geom_point() + 
-  scale_colour_viridis_d() +
-  facet_wrap(~variable, scales = "free") +
-  theme_minimal() + 
-  theme(axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank()) +
-  labs(title = "Relationship between assists and other factors",
-       x ='assists')
-
 ggplot(totalXA) +
-  aes(x=assists, y=shotAssists, color=group) +
+  aes(x=shotAssists, y=assists, color=group) +
   geom_point() + 
   scale_colour_viridis_d() +
   theme_minimal() +
   labs(title = "Relationship between assists and shotAssists")
 
+############################################################################################################
+
+totalXA %>%
+  select(-player.name, -assists) %>%
+  reshape2::melt(id.vars=c('shotAssists','group')) %>%
+  ggplot() +
+  aes(x=value, y=shotAssists, color=group) + 
+  geom_point() + 
+  scale_colour_viridis_d() +
+  facet_wrap(~variable, scales = "free", strip.position = 'bottom') +
+  theme_minimal() + 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  labs(title = "Relationship between assists and other factors",
+       x='',
+       ylab ='shotAssists')
+
+totalXA.cor <- cor(select(totalXA, -player.name, -assists, -group))
+ggcorrplot::ggcorrplot(totalXA.cor,
+                       lab=TRUE, 
+                       show.legend=FALSE,
+                       hc.order=TRUE,
+                       color=c('#FDE725FF', '#238A8DFF', '#440154FF'),
+                       lab_size = 2,
+                       outline.color='black')
+
 ####################################################################################### DIMENSION REDUCTION
 
 # TNSE
+tsneData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(tsneData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
 set.seed(823)
-RtsneAssists <- Rtsne::Rtsne(
-  X=select(totalXA,-player.name,-shotAssists,-assists,-group)
+tsneAssists <- Rtsne::Rtsne(
+  X=tsneData_M
 )
 
-RTSNEFeatures <- data.frame(RtsneAssists$Y,totalXA$group)
-colnames(RTSNEFeatures) <- c('feature1','feature2','group')
-ggplot(RTSNEFeatures) +
+tsneFeatures <- data.frame(tsneAssists$Y,totalXA$group)
+colnames(tsneFeatures) <- c('feature1','feature2','group')
+rownames(tsneFeatures) <- rownames(tsneData_M)
+ggplot(tsneFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "T-SNE")
 
-
 # PRCOMP
-prcompAssists <- prcomp(
-  x = select(totalXA,-player.name,-shotAssists,-assists,-group),
+pcaData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(pcaData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
+pcaAssists <- prcomp(
+  x = pcaData_M,
   center = TRUE,
   scale. = TRUE,
   rank = 2
 )
 
-PRCCompFeatures <- data.frame(prcompAssists$x[,1:2],totalXA$group)
-colnames(PRCCompFeatures) <- c('feature1','feature2','group')
-ggplot(PRCCompFeatures) +
+pcaFeatures <- data.frame(pcaAssists$x[,1:2],totalXA$group)
+colnames(pcaFeatures) <- c('feature1','feature2','group')
+ggplot(pcaFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "PCA")
 
-
 # NONNEGATIVE
+nmfData_M <- data.frame(select(totalXA,-player.name,-shotAssists,-assists,-group))
+rownames(nmfData_M) <- sapply(totalXA$player.name,function(X) {paste(strsplit(X,' ')[[1]][1],strsplit(X,' ')[[1]][2],sep='')})
 nmfAssists <- NMF::nmf(
-  x = select(totalXA,-player.name,-shotAssists,-assists,-group),
+  x = nmfData_M,
   rank = 2
 )
 basis_acq <- NMF::basis(nmfAssists)
 coef_acq <- NMF::coef(nmfAssists)
 t(round(head(coef_acq),3)) %>% View()
 
-nonNegFeatures <- data.frame(basis_acq, totalXA$group)
-colnames(nonNegFeatures) <- c('feature1','feature2','group')
-ggplot(nonNegFeatures) +
+nmfFeatures <- data.frame(basis_acq, totalXA$group)
+colnames(nmfFeatures) <- c('feature1','feature2','group')
+ggplot(nmfFeatures) +
   aes(x=feature1, y=feature2, color=group) +
   geom_point() +
   scale_color_viridis_d() +
   theme_minimal() +
   labs(title = "Non-Negative Matrix Factorization")
 
+###########################
+
+# Models
+
+tsneFeatures <- data.frame(tsneFeatures[,1:2], totalXA$shotAssists)
+colnames(tsneFeatures)[3] <- 'shotAssists'
+tsneModel <- lm(shotAssists~., data=tsneFeatures)
+tsneSummary <- summary(tsneModel)
+
+pcaFeatures <- data.frame(pcaFeatures[,1:2], totalXA$shotAssists)
+colnames(pcaFeatures)[3] <- 'shotAssists'
+pcaModel <- lm(shotAssists~., data=pcaFeatures)
+pcaSummary <- summary(pcaModel)
+
+nmfFeatures <- data.frame(nmfFeatures[,1:2], totalXA$shotAssists)
+colnames(nmfFeatures)[3] <- 'shotAssists'
+nmfModel <- lm(shotAssists~., data=nmfFeatures)
+nmfSummary <- summary(nmfModel)
+
+rSquared <- data.frame(r.sqr=c(tsneSummary$r.squared, pcaSummary$r.squared, nmfSummary$r.squared), technique=c('tsne', 'pca', 'nmf'))
+ggplot(rSquared) +
+  aes(x=technique, y=r.sqr) + 
+  geom_bar(stat='identity', fill=c('#FDE725FF', '#238A8DFF', '#440154FF')) + 
+  theme_minimal()
