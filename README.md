@@ -26,7 +26,8 @@ Keira Walsh - Manchester City: 10
 
 ![alt text](./keira_walsh.jpg)
 
-Incidently, these are the only players with double digits assist totals during the covered time span. So what exactly do these players that makes them more productive? It can be that they start their passes from specific positions on the pitch (this will correspond to the startX variable in our dataset), or it could be that they pick certain locations to pass to (corresponding to the endX variable in our dataset). It could also be that their passes have a specific length, or it could be that they are dead ball specialists with the ability to pick unmarked colleagues from set pieces. Or, it could be a combination of all of these features. This is why I will be using 3 dimesion reduction techniques, T-SNE, PCA, and NMF, to try to distill as much information as possible from the different features into 2 features.
+Incidently, these are the only players with double digits assist totals during the covered time span. So what exactly do these players do that makes them more productive? It can be that they start their passes from specific positions on the pitch (this will correspond to the startX variable in our dataset), or it could be that they pick certain locations to pass to (corresponding to the endX variable in our dataset). It could also be that their passes have a specific length, or it could be that they are dead ball specialists with the ability to pick unmarked colleagues from set pieces. Or, it could be a combination of all of these features. This is why I will be using 3 dimesion reduction techniques, T-SNE, PCA, and NMF, to try to distill as much information as possible from the different features into 2 features.
+
 
 ## Features
 
